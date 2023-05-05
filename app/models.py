@@ -1,82 +1,114 @@
+from datetime import datetime
 from app import db
 
 
 class Trade(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     symbol = db.Column(db.String(10), nullable=False)
-    trade_date = db.Column(db.Date, nullable=False)
-    entry_times = db.Column(db.String(255))
-    entry_prices = db.Column(db.String(255))
-    entry_contracts = db.Column(db.String(255))
-    exit_times = db.Column(db.String(255))
-    exit_prices = db.Column(db.String(255))
-    exit_contracts = db.Column(db.String(255))
-    image_path = db.Column(db.String(255))
+    instrument = db.Column(db.String(30), nullable=False)
+    open_date = db.Column(db.Date, nullable=False)
+    orders = db.relationship("Order", backref="trade", lazy=True)
 
     def __repr__(self):
-        return f"<Trade {self.symbol} - {self.entry_contracts} contracts>"
+        return f"<Trade {self.symbol} - {self.instrument}>"
 
     def to_dict(self):
         return {
             "id": self.id,
             "symbol": self.symbol,
-            "trade_date": self.trade_date.isoformat(),
-            "entry_times": self.entry_times.split(","),
-            "entry_prices": [float(p) for p in self.entry_prices.split(",")],
-            "entry_contracts": [int(c) for c in self.entry_contracts.split(",")],
-            "exit_times": self.exit_times.split(","),
-            "exit_prices": [float(p) for p in self.exit_prices.split(",")],
-            "exit_contracts": [int(c) for c in self.exit_contracts.split(",")],
-            "image_path": self.image_path,
+            "instrument": self.instrument,
+            "open_date": str(self.open_date),
+            "orders": [order.to_dict() for order in self.orders],
         }
 
-    def calculate_pnl(self):
-        # Split the entry/exit prices and contracts by comma
-        entry_prices = [float(price) * 100 for price in self.entry_prices.split(",")]
-        entry_contracts = [
-            int(contract) for contract in self.entry_contracts.split(",")
-        ]
-        exit_prices = [float(price) * 100 for price in self.exit_prices.split(",")]
-        exit_contracts = [int(contract) for contract in self.exit_contracts.split(",")]
+    @property
+    def status(self):
+        total_quantity = 0
+        total_cost = 0
 
-        # Calculate the total P&L
-        total_entry_cost = sum(
-            [price * contract for price, contract in zip(entry_prices, entry_contracts)]
-        )
-        total_exit_cost = sum(
-            [price * contract for price, contract in zip(exit_prices, exit_contracts)]
-        )
-        pnl = round(total_exit_cost - total_entry_cost, 2)
+        for order in self.orders:
+            if order.quantity > 0:  # buy order
+                total_quantity += order.quantity
+                total_cost += order.total_cost
+            elif order.quantity < 0:  # sell order
+                total_quantity -= abs(order.quantity)
+                total_cost -= order.total_cost
 
-        return pnl
+        if total_quantity != 0:  # still open
+            return "open"
+        elif total_cost < 0:  # win
+            return "win"
+        elif total_cost > 0:  # loss
+            return "loss"
 
-    def total_entry_cost(self):
-        entry_prices = [float(price) * 100 for price in self.entry_prices.split(",")]
-        entry_contracts = [
-            int(contract) for contract in self.entry_contracts.split(",")
-        ]
-        total_entry_cost = sum(
-            [price * contract for price, contract in zip(entry_prices, entry_contracts)]
-        )
-        return round(total_entry_cost, 2)
+    @property
+    def adjusted_cost(self):
+        total_cost = 0
+        for order in self.orders:
+            if order.quantity > 0:  # Buy order
+                total_cost += abs(order.total_cost)
+        return total_cost
 
-    def total_exit_cost(self):
-        exit_prices = [float(price) * 100 for price in self.exit_prices.split(",")]
-        exit_contracts = [int(contract) for contract in self.exit_contracts.split(",")]
-        total_exit_cost = sum(
-            [price * contract for price, contract in zip(exit_prices, exit_contracts)]
-        )
-        return round(total_exit_cost, 2)
+    @property
+    def adjusted_proceeds(self):
+        total_proceeds = 0
+        for order in self.orders:
+            if order.quantity < 0:  # Sell order
+                total_proceeds += abs(order.total_cost)
+        return total_proceeds
 
-    def calculate_pnl_percent(self):
-        pnl_percent = round(self.calculate_pnl() / self.total_entry_cost() * 100, 2)
-        return pnl_percent
-
+    @property
     def pnl(self):
-        return f"${self.calculate_pnl()}"
+        return self.adjusted_proceeds - self.adjusted_cost
+
+    @property
+    def pnl_percent(self):
+        return round((self.pnl / self.adjusted_cost) * 100, 2)
 
 
-def calculate_total_pnl():
-    trades = Trade.query.all()
-    total_pnl = sum([trade.calculate_pnl() for trade in trades])
-    return round(total_pnl, 2)
+class Order(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date_time = db.Column(db.DateTime, default=datetime.utcnow)
+    price = db.Column(db.Float, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    trade_id = db.Column(db.Integer, db.ForeignKey("trade.id"), nullable=False)
+
+    @property
+    def total_cost(self):
+        return (self.price * self.quantity * 100) * -1
+
+    def is_buy_order(self):
+        return self.quantity > 0
+
+    def is_sell_order(self):
+        return self.quantity < 0
+
+    @property
+    def adjusted_cost(self):
+        if self.is_buy_order():
+            return self.total_cost
+        else:
+            return None
+
+    @property
+    def adjusted_proceeds(self):
+        if self.is_sell_order():
+            return self.total_cost
+        else:
+            return None
+
+    @property
+    def gross_pnl(self):
+        if self.quantity < 0:  # Sell order
+            buy_orders = [order for order in self.trade.orders if order.quantity > 0]
+            total_quantity_bought = sum([order.quantity for order in buy_orders])
+            if total_quantity_bought > 0:
+                avg_buy_price = (
+                    sum([order.price * order.quantity for order in buy_orders])
+                    / total_quantity_bought
+                )
+                return round((self.price - avg_buy_price) * abs(self.quantity) * 100, 2)
+            else:
+                return None
+        else:
+            return None
