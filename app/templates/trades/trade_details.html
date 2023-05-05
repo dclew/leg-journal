@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Trade Details {{trade.id}}</h1>
+<div class="container">
+    <h1>{{ trade.symbol }}</h1>
+    <table class="table table-striped">
+        <tbody>
+            <tr>
+                <th>Date</th>
+                <td>{{ trade.trade_date }}</td>
+            </tr>
+            <tr>
+                <th>Entry Times</th>
+                <td>{{ trade.entry_times }}</td>
+            </tr>
+            <tr>
+                <th>Entry Prices</th>
+                <td>{{ trade.entry_prices }}</td>
+            </tr>
+            <tr>
+                <th>Entry Contracts</th>
+                <td>{{ trade.entry_contracts }}</td>
+            </tr>
+            <tr>
+                <th>Exit Times</th>
+                <td>{{ trade.exit_times }}</td>
+            </tr>
+            <tr>
+                <th>Exit Prices</th>
+                <td>{{ trade.exit_prices }}</td>
+            </tr>
+            <tr>
+                <th>Exit Contracts</th>
+                <td>{{ trade.exit_contracts }}</td>
+            </tr>
+            <tr>
+                <th>Total Entry Cost</th>
+                <td>{{ trade.total_entry_cost() }}</td>
+            </tr>
+            <tr>
+                <th>Total Exit Cost</th>
+                <td>{{ trade.total_exit_cost() }}</td>
+            </tr>
+            <tr>
+                <th>PNL</th>
+                {% set pnl = trade.calculate_pnl() %}
+                {% if pnl < 0 %} <td class="table-danger">{{ pnl }}</td>
+                    {% else %}
+                    <td class="table-success">{{ pnl }}</td>
+                    {% endif %}
+            </tr>
+            <tr>
+                <th>PNL%</th>
+                {% set pnl_percent = trade.calculate_pnl_percent() %}
+                {% if pnl_percent < 0 %} <td class="table-danger">{{ pnl_percent }}%</td>
+                    {% else %}
+                    <td class="table-success">{{ pnl_percent }}%</td>
+                    {% endif %}
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

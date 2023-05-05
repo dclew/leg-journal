@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block content %}
+{{ total_pnl }}
+<h1>List of Trades</h1>
+
+<!-- New trade form -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTradeModal">
+    Add New Trade
+</button>
+
+<div class="modal fade" id="newTradeModal" tabindex="-1" aria-labelledby="newTradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newTradeModalLabel">New Trade Form</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" name="trade_form">
+                    {{ form.csrf_token }}
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.symbol.label }} {{ form.symbol }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.trade_date.label }} {{ form.trade_date }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.entry_prices.label }} {{ form.entry_prices(id='entry_prices') }}
+                        <div id="entry_prices_error" class="d-none">Please enter valid entry prices</div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.entry_contracts.label }} {{ form.entry_contracts(id='entry_contracts') }}
+                        <div id="entry_contracts_error" class="d-none">Please enter valid entry contracts</div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.exit_prices.label }} {{ form.exit_prices(id='exit_prices') }}
+                        <div id="exit_prices_error" class="d-none">Please enter valid exit prices</div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.exit_contracts.label }} {{ form.exit_contracts(id='exit_contracts') }}
+                        <div id="exit_contracts_error" class="d-none">Please enter valid exit contracts</div>
+                    </div>
+                    <button type="submit" class="btn btn-success mt-3">Save Trade</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Date</th>
+            <th>Total Entry Cost</th>
+            <th>Total Exit Cost</th>
+            <th>PNL</th>
+            <th>PNL%</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for trade in trades %}
+        <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
+            <td>{{ trade.symbol }}</td>
+            <td>{{ trade.trade_date }}</td>
+            <td>{{ trade.total_entry_cost() }}</td>
+            <td>{{ trade.total_exit_cost() }}</td>
+            {% set pnl = trade.calculate_pnl() %}
+            {% if pnl < 0 %} <td class="table-danger">${{ pnl }}</td>
+                {% else %}
+                <td class="table-success">${{ pnl }}</td>
+                {% endif %}
+                {% set pnl_percent = trade.calculate_pnl_percent() %}
+                {% if pnl_percent < 0 %} <td class="table-danger">{{ pnl_percent }}%</td>
+                    {% else %}
+                    <td class="table-success">{{ pnl_percent }}%</td>
+                    {% endif %}
+                    <td><a href="#" class="btn btn-danger btn-sm delete-trade-btn" data-trade-id="{{ trade.id }}"
+                            data-bs-toggle="modal" data-bs-target="#deleteTradeModal{{ trade.id }}">Delete</a></td>
+
+        </tr>
+        <!-- Delete Trade Modal -->
+        <div class="modal fade" id="deleteTradeModal{{ trade.id }}" tabindex="-1"
+            aria-labelledby="deleteTradeModalLabel{{ trade.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteTradeModalLabel{{ trade.id }}">Delete Trade</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this trade?
+                    </div>
+                    <div class="modal-footer">
+                        <form action="{{ url_for('trades_bp.delete_trade', trade_id=trade.id) }}" method="POST">
+                            {{ form.csrf_token }}
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('trades_bp.export_trades_csv') }}" class="btn btn-primary" role="button" aria-pressed="true">Export
+    Trades to CSV</a>
+
+<script>
+    $(document).ready(function () {
+        // Add hover effect to clickable rows
+        $("tr[data-href]").on("mouseenter", function () {
+            $(this).addClass("hover");
+        }).on("mouseleave", function () {
+            $(this).removeClass("hover");
+        });
+
+        // Redirect to trade details page when clicking on a row
+        $("tr[data-href]").on("click", function () {
+            window.location.href = $(this).data("href");
+        });
+
+        // Delete trade
+        $(".delete-trade-btn").click(function (event) {
+            event.stopPropagation(); // Prevent click event from propagating to the row
+            var tradeId = $(this).data("trade-id");
+            $("#deleteTradeForm").attr("action", "/trades/" + tradeId + "/delete");
+            $("#deleteTradeModal").modal("show");
+        });
+    });
+
+</script>
+
+<style>
+    .table-row:hover {
+        background-color: #f5f5f5;
+        cursor: pointer;
+    }
+</style>
+
+
+<script src="{{ url_for('static', filename='js/add_trade_validation.js') }}"></script>
+
+
+{% endblock %}
