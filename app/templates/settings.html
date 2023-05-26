@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<br>
+<h3>Settings</h3>
+<div class="card">
+    <div class="card-header">
+        <h5>Manage Portfolios</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>PNL</th>
+                    <th>Trade Win %</th>
+                    <th># of Trades</th>
+                    <th>Wins/Losses</th>
+                    <th>Profit/Loss</th>
+                    <th>Trade Expectancy</th>
+                    <th>Profit Factor</th>
+                    <th>Edit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for portfolio in portfolios %}
+                <tr data-href="{{ url_for('trades_bp.dashboard', portfolio_id=portfolio.id) }}" class="table-row">
+                    <td>{{ portfolio.name }}</td>
+                    <td
+                        class="{% if portfolio.pnl > 0 %}text-success{% elif portfolio.pnl < 0 %}text-danger{% endif %}">
+                        ${{ portfolio.pnl }}</td>
+                    <td
+                        class="{% if portfolio.win_percentage > 0 %}{% if portfolio.win_percentage >= 50 %}text-success{% else %}text-danger{% endif %}{% endif %}">
+                        {{ portfolio.win_percentage }}%
+                    </td>
+                    <td>{{ portfolio.num_closed_trades }}</td>
+                    <td>
+                        <span class="text-success">{{ portfolio.num_winning_trades }}</span>
+                        /
+                        <span class="text-danger">{{ portfolio.num_losing_trades }}</span>
+                    </td>
+                    <td>
+                        <span class="text-success">${{ portfolio.total_profit }}</span>
+                        /
+                        <span class="text-danger">${{ portfolio.total_losses }}</span>
+                    </td>
+                    <td>${{ portfolio.trade_expectancy }}</td>
+                    <td>{{ portfolio.profit_factor }}</td>
+                    <td>
+                        <a href="#" class="edit-portfolio-btn" data-bs-toggle="modal"
+                            data-bs-target="#editPortfolioModal-{{ portfolio.id }}"
+                            data-portfolio-id="{{ portfolio.id }}" data-portfolio-name="{{ portfolio.name }}"><span
+                                class="oi oi-pencil"></span></a>
+                    </td>
+                </tr>
+
+                <!-- Edit Portfolio Modal -->
+                <div class="modal fade" id="editPortfolioModal-{{ portfolio.id }}" tabindex="-1"
+                    aria-labelledby="editPortfolioModalLabel-{{ portfolio.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editPortfolioModalLabel-{{ portfolio.id }}">Edit Portfolio
+                                    {{ portfolio.id }} {{ portfolio.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editPortfolioForm-{{ portfolio.id }}" method="POST"
+                                    action="{{ url_for('default_bp.edit_portfolio_name', portfolio_id=portfolio.id) }}">
+                                    {{ form.csrf_token }}
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Portfolio Name</label>
+                                        <input type="text" class="form-control" id="name" name="name" required>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<hr>
+<h5>Create New Portfolio</h5>
+<form method="POST" action="{{ url_for('default_bp.settings') }}">
+    {{ form.csrf_token }}
+    <div class="mb-3">
+        {{ form.name.label }}
+        {{ form.name(class_='form-control') }}
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+<script>
+    $(document).ready(function () {
+        // Add hover effect to clickable rows
+        $("tr[data-href]").on("mouseenter", function () {
+            $(this).addClass("hover");
+        }).on("mouseleave", function () {
+            $(this).removeClass("hover");
+        });
+
+        // Redirect to trade details page when clicking on a row
+        $("tr[data-href]").on("click", function () {
+            window.location.href = $(this).data("href");
+        });
+
+        // Delete trade
+        $(".edit-portfolio-btn").click(function (event) {
+            event.stopPropagation(); // Prevent click event from propagating to the row
+            $("#editPortfolioModal").modal("show");
+        });
+    });
+</script>
+<style>
+    .table-row:hover {
+        background-color: #464646;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

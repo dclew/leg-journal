@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col">
+        <h3>Daily Journal</h3>
+    </div>
+    <div class="col text-end">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="portfolioDropdown"
+                data-bs-toggle="dropdown" aria-expanded="false" data-csrf="{{ csrf_token() }}">
+                {{ selected_portfolio.name }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="portfolioDropdown">
+                {% for portfolio in portfolios %}
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('trades_bp.daily_journal', portfolio_id=portfolio.id) }}">
+                        {{ portfolio.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+<br>
+{% for trade_date, trade_info in journal %}
+<div class="card mb-2">
+    <div class="card-header">
+        <div class="d-flex align-items-center">
+            <h4 class="me-3">{{ trade_date }}</h4>
+            <h4 class="{% if trade_info.pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                Net PNL ${{ trade_info.pnl }}
+            </h4>
+        </div>
+    </div>
+    <div class="card-body">
+
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Open Time</th>
+                    <th>Status</th>
+                    <th>Ticker</th>
+                    <th>Market</th>
+                    <th>Instrument</th>
+                    <th>Net PNL</th>
+                    <th>NET ROI</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trade in trade_info['trades'] %}
+                <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
+                    <td>{{ trade.date_time }}</td>
+                    <td>
+                        {% if trade.status == 'WIN' %}
+                        <span class="badge bg-success">{{ trade.status }}</span>
+                        {% elif trade.status == 'LOSS' %}
+                        <span class="badge bg-danger">{{ trade.status }}</span>
+                        {% else %}
+                        <span class="badge bg-warning">{{ trade.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ trade.symbol }}</td>
+                    <td>{{ trade.market }}</td>
+                    <td>{{ trade.instrument }}</td>
+                    <td class="{% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
+                        ${{
+                        trade.pnl
+                        }}
+                    </td>
+                    <td
+                        class="{% if trade.pnl_percent > 0 %}text-success{% elif trade.pnl_percent < 0 %}text-danger{% endif %}">
+                        {{ trade.pnl_percent }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endfor %}
+<script src="{{ url_for('static', filename='js/portfolio_select.js') }}"></script>
+<script>
+    $(document).ready(function () {
+        // Add hover effect to clickable rows
+        $("tr[data-href]").on("mouseenter", function () {
+            $(this).addClass("hover");
+        }).on("mouseleave", function () {
+            $(this).removeClass("hover");
+        });
+
+        // Redirect to trade details page when clicking on a row
+        $("tr[data-href]").on("click", function () {
+            window.location.href = $(this).data("href");
+        });
+
+        // Delete trade
+        $(".delete-trade-btn").click(function (event) {
+            event.stopPropagation(); // Prevent click event from propagating to the row
+            var tradeId = $(this).data("trade-id");
+            $("#deleteTradeForm").attr("action", "/trades/" + tradeId + "/delete");
+            $("#deleteTradeModal").modal("show");
+        });
+    });
+</script>
+<style>
+    .table-row:hover {
+        background-color: #464646;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
