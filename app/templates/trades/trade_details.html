@@ -2,64 +2,43 @@
 
 {% block content %}
 <h1>Trade Details {{trade.id}}</h1>
-<div class="container">
-    <h1>{{ trade.symbol }}</h1>
-    <table class="table table-striped">
-        <tbody>
-            <tr>
-                <th>Date</th>
-                <td>{{ trade.trade_date }}</td>
-            </tr>
-            <tr>
-                <th>Entry Times</th>
-                <td>{{ trade.entry_times }}</td>
-            </tr>
-            <tr>
-                <th>Entry Prices</th>
-                <td>{{ trade.entry_prices }}</td>
-            </tr>
-            <tr>
-                <th>Entry Contracts</th>
-                <td>{{ trade.entry_contracts }}</td>
-            </tr>
-            <tr>
-                <th>Exit Times</th>
-                <td>{{ trade.exit_times }}</td>
-            </tr>
-            <tr>
-                <th>Exit Prices</th>
-                <td>{{ trade.exit_prices }}</td>
-            </tr>
-            <tr>
-                <th>Exit Contracts</th>
-                <td>{{ trade.exit_contracts }}</td>
-            </tr>
-            <tr>
-                <th>Total Entry Cost</th>
-                <td>{{ trade.total_entry_cost() }}</td>
-            </tr>
-            <tr>
-                <th>Total Exit Cost</th>
-                <td>{{ trade.total_exit_cost() }}</td>
-            </tr>
-            <tr>
-                <th>PNL</th>
-                {% set pnl = trade.calculate_pnl() %}
-                {% if pnl < 0 %} <td class="table-danger">{{ pnl }}</td>
-                    {% else %}
-                    <td class="table-success">{{ pnl }}</td>
-                    {% endif %}
-            </tr>
-            <tr>
-                <th>PNL%</th>
-                {% set pnl_percent = trade.calculate_pnl_percent() %}
-                {% if pnl_percent < 0 %} <td class="table-danger">{{ pnl_percent }}%</td>
-                    {% else %}
-                    <td class="table-success">{{ pnl_percent }}%</td>
-                    {% endif %}
-            </tr>
-        </tbody>
-    </table>
-</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Date/Time</th>
+            <th>Instrument</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Adjusted Cost</th>
+            <th>Adjusted Proceed</th>
+            <th>Gross P&amp;L</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in trade.orders %}
+        <tr>
+            <td>{{ order.date_time }}</td>
+            <td>{{ trade.instrument }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>${{ order.price }}</td>
+            <td>{% if order.is_buy_order() %}${{ order.adjusted_cost }}{% else %}--{% endif %}</td>
+            <td>{% if order.is_sell_order() %}${{ order.adjusted_proceeds }}{% else %}--{% endif %}</td>
+            <td>
+                {% if order.is_sell_order() %}
+                {% if order.gross_pnl %}
+                <span style="color: {% if order.gross_pnl >= 0 %}green{% else %}red{% endif %}">${{ order.gross_pnl
+                    }}</span>
+                {% else %}
+                --
+                {% endif %}
+                {% else %}
+                --
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 
 {% endblock %}
