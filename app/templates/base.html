@@ -3,34 +3,114 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}{% endblock %} APP</title>
+    <title>{% block title %}{% endblock %} Trade Journal</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.png') }}" type="image/png">
     {% include 'html_dependencies.html' %}
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('trades_bp.list_trades') }}">APP</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="">View1</a>
+    <main>
+        <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark" style="width: 280px;">
+            <a href="{{ url_for('trades_bp.dashboard', portfolio_id=session.get('selected_portfolio_id', 0)) }}"
+                class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                <svg class="bi me-2" width="40" height="32">
+                    <use xlink:href="#bootstrap" />
+                </svg>
+                <span class="fs-4">Trade Journal</span>
+            </a>
+            <br>
+            <div class="text-center">
+                <a href="{{ url_for('trades_bp.new_trade')}}" class="btn btn-primary btn-small" style="width: 75%;">Add
+                    Trade</a>
+            </div>
+            <br>
+            <ul class=" list-unstyled ps-0 flex-column mb-auto">
+                <li class="nav-item mb-3">
+                    <a href="{{ url_for('trades_bp.dashboard', portfolio_id=session.get('selected_portfolio_id', 0)) }}"
+                        class="nav-link active" aria-current="page">
+                        <svg class="bi me-2" width="16" height="16">
+                            <use xlink:href="#home" />
+                        </svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-3">
+                    <a href="{{ url_for('trades_bp.daily_journal', portfolio_id=session.get('selected_portfolio_id', 0)) }}"
+                        class="nav-link active" aria-current="page">
+                        <svg class="bi me-2" width="16" height="16">
+                            <use xlink:href="#home" />
+                        </svg>
+                        Daily Journal
+                    </a>
+                </li>
+                <li class="nav-item mb-3">
+                    <a href="{{ url_for('trades_bp.trade_log', portfolio_id=session.get('selected_portfolio_id', 0)) }}"
+                        class="nav-link active" aria-current="page">
+                        <svg class="bi me-2" width="16" height="16">
+                            <use xlink:href="#home" />
+                        </svg>
+                        Trade Log
+                    </a>
+                </li>
+                <!-- <li class="mb-1">
+                    <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
+                        data-bs-target="#home-collapse" aria-expanded="true">
+                        Portfolios
+                    </button>
+                    <div class="collapse show" id="home-collapse">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">{% for portfolio in
+                            nav_portfolios
+                            %}
+                            <li><a href="{{ url_for('trades_bp.list_trades', portfolio_id=portfolio.id) }}"
+                                    class="link-light rounded">{{ portfolio.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </li> -->
+
+
+
+
+            </ul>
+            {% if current_user.is_anonymous %}
+            {% else %}
+            <hr>
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
+                    id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <!-- <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2"> -->
+                    <strong>{{current_user.email}}</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                    <li><a class="dropdown-item" href="{{ url_for('default_bp.settings') }}">Settings</a></li>
+                    <li><a class="dropdown-item" href="#">Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item" href="{{ url_for('auth_bp.logout') }}">Sign out</a>
                     </li>
                 </ul>
             </div>
+            {% endif %}
         </div>
-    </nav>
-    <div class="container">
-        {% block content %}
-
-        {% endblock %}
-    </div>
+        <div class="b-example-divider"></div>
+        <!-- Main content area -->
+        <div class="content">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="alert alert-danger flash-messages" role="alert">
+                {% for message in messages %}
+                <span class="flash-message">{{ message }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
 </body>
 
 </html>

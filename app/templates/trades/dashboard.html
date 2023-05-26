@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <h3>Dashboard</h3>
+    </div>
+    <div class="col text-end">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="portfolioDropdown"
+                data-bs-toggle="dropdown" aria-expanded="false" data-csrf="{{ csrf_token() }}">
+                {{ selected_portfolio.name }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="portfolioDropdown">
+                {% for portfolio in portfolios %}
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('trades_bp.dashboard', portfolio_id=portfolio.id) }}">
+                        {{ portfolio.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+<br>
+
+<!-- Stat cards for portfolio -->
+<div class="row align-items-stretch">
+    <div class="col-auto">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div>
+                    <h6>Net PNL</h6>
+                </div>
+                <div>
+                    <h4
+                        class="{% if selected_portfolio.pnl > 0 %}text-success{% elif selected_portfolio.pnl < 0 %}text-danger{% endif %}">
+                        ${{ selected_portfolio.pnl }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div>
+                    <h6>Trade Expectancy</h6>
+                </div>
+                <div>
+                    <h4
+                        class="{% if selected_portfolio.pnl > 0 %}text-success{% elif selected_portfolio.pnl < 0 %}text-danger{% endif %}">
+                        ${{ selected_portfolio.trade_expectancy }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div class="row">
+                    <div class="col">
+                        <div>
+                            <h6>Profit Factor</h6>
+                        </div>
+                        <div>
+                            <h4>{{ selected_portfolio.profit_factor }}</h4>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <h6 class="text-success">${{ selected_portfolio.total_profit }} Profit</h6>
+                        <h6 class="text-danger">${{ selected_portfolio.total_losses }} Losses</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div class="row">
+                    <div class="col d-flex flex-column justify-content-center">
+                        <div>
+                            <h6>Trade Win %</h6>
+                        </div>
+                        <div>
+                            <h4>{{ selected_portfolio.win_percentage }}%</h4>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <h6>{{ selected_portfolio.num_closed_trades }} Total trades</h6>
+                        <h6 class="text-success">{{ selected_portfolio.num_winning_trades }} Winning Trades</h6>
+                        <h6 class="text-danger">{{ selected_portfolio.num_losing_trades }} Losing Trades</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div class="row">
+                    <div class="col d-flex flex-column justify-content-center">
+                        <div>
+                            <h6>Avg win/loss trade</h6>
+                        </div>
+                        <div>
+                            <h4>{{ selected_portfolio.average_win_loss_trade }}</h4>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div>
+                            <h6 class="text-success">Avg winning amount: ${{ selected_portfolio.average_winning_profit
+                                }}
+                            </h6>
+                        </div>
+                        <div>
+                            <h6 class="text-danger">Avg losing amount: ${{ selected_portfolio.average_losing_profit }}
+                            </h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        {% if selected_portfolio.avg_time_in_trade %}
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <div class="row">
+                    <div class="col d-flex flex-column justify-content-center">
+                        <div>
+                            <h6>Avg time in all trades</h6>
+                        </div>
+                        <div>
+                            <h4>
+                                {{ selected_portfolio.avg_time_in_trade }} mins
+                            </h4>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div>
+                            <h6 class="text-success">Avg time winning trade: {{
+                                selected_portfolio.avg_time_in_trade_winning_trades }} mins</h6>
+                        </div>
+                        <div>
+                            <h6 class="text-danger">Avg time losing trade: {{
+                                selected_portfolio.avg_time_in_trade_losing_trades
+                                }} mins</h6>
+                        </div>
+                    </div>
+                </div>
+
+                {% if selected_portfolio.avg_time_in_trade_winning_trades %}
+
+                <!-- <div>
+                    <h4 class="text-success">
+                        {{ selected_portfolio.avg_time_in_trade_winning_trades }} minutes
+                    </h4>
+                </div>
+                {% endif %}
+                {% if selected_portfolio.avg_time_in_trade_losing_trades %}
+                <div>
+                    <h6>Avg time in losing trade</h6>
+                </div>
+                <div>
+                    <h4 class="text-danger">
+                        {{ selected_portfolio.avg_time_in_trade_losing_trades }} minutes
+                    </h4>
+                </div> -->
+                <!-- {% endif %} -->
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<br>
+<div class="row">
+    <div class="col-6">
+        <div class="card">
+            <div class="card-body d-flex flex-column justify-content-center">
+                <h4>Daily Net Cumulative PNL</h4>
+                <canvas id="pnlChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="card">
+            <div class="card-body">
+                <h4>Net Daily PNL</h4>
+                <canvas id="dailyPnlChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+<div class="row">
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h4>Open Trades</h4>
+                {% if selected_portfolio.has_open_trades %}
+                <table class="table table-striped table-hover dark-datatable">
+                    <thead>
+                        <tr>
+                            <th>Open Date</th>
+                            <th>Symbol</th>
+                            <th>Status</th>
+                            <th>Instrument</th>
+                            <th>Cost</th>
+                            <th>Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in trades %}
+                        {% if trade.status == "OPEN" %}
+                        <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
+                            <td>{{ trade.date_time }}</td>
+                            <td>{{ trade.symbol }}</td>
+                            <td><span class="badge bg-warning">{{ trade.status }}</span></td>
+                            <td>{{ trade.instrument }}</td>
+                            <td>${{ trade.adjusted_cost }}</td>
+                            <td>{{ trade.volume }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                No open trades
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Trade Details Modal -->
+<div class="modal fade" id="tradeDetailsModal" tabindex="-1" aria-labelledby="tradeDetailsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 50%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tradeDetailsModalLabel">Trade Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Add trade details content here -->
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+
+
+
+
+<script>
+    function generatePnlChart(data) {
+        var ctx = document.getElementById('pnlChart').getContext('2d');
+
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'PnL over Time',
+                    data: Object.values(data),
+                    borderColor: 'white'
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        display: true,
+                        ticks: {
+                            color: 'white',
+                        }
+                    },
+                    y: {
+                        display: true,
+                        ticks: {
+                            color: 'white',
+                            callback: function (value) {
+                                return '$' + value; // Prepend the dollar sign to the value
+                            },
+                        }
+                    }
+                },
+                elements: {
+                    line: {
+                        tension: 0.3,
+                        fill: {
+                            target: 'origin',
+                            below: 'rgba(210,72,57, 0.7)',
+                            above: '',
+                        },
+                        borderWidth: 2
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                }
+            }
+        });
+    }
+
+    // Retrieve pnl data from Flask and generate the chart
+    var pnlData = {{ pnl_data | tojson }};
+    generatePnlChart(pnlData);
+</script>
+
+<script>
+    // Retrieve the daily PNL data from Flask
+    var dailyPnlData = {{ daily_pnl | tojson }};
+
+    // Get the canvas element
+    var ctx = document.getElementById('dailyPnlChart').getContext('2d');
+
+    // Create the bar chart
+    var chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(dailyPnlData),
+            datasets: [{
+                label: 'Daily PNL',
+                data: Object.values(dailyPnlData),
+                backgroundColor: function (context) {
+                    var value = context.dataset.data[context.dataIndex];
+                    return value < 0 ? 'rgba(210,72,57, 0.7)' : 'rgba(1,186,139, 0.7)';
+                }
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    display: true,
+                    ticks: {
+                        color: 'white',
+                    }
+                },
+                y: {
+                    display: true,
+                    ticks: {
+                        color: 'white',
+                        callback: function (value) {
+                            return '$' + value; // Prepend the dollar sign to the value
+                        },
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+</script>
+
+
+<script>
+    $(document).ready(function () {
+        // Add hover effect to clickable rows
+        $("tr[data-href]").on("mouseenter", function () {
+            $(this).addClass("hover");
+        }).on("mouseleave", function () {
+            $(this).removeClass("hover");
+        });
+
+        // Redirect to trade details page when clicking on a row
+        $("tr[data-href]").on("click", function () {
+            window.location.href = $(this).data("href");
+        });
+    });
+
+</script>
+<style>
+    .table-row:hover {
+        background-color: #464646;
+        cursor: pointer;
+    }
+</style>
+<script>
+    $(document).ready(function () {
+        // Initialize the FullCalendar with trade data and theme
+        $('#calendar').fullCalendar({
+            defaultView: 'month',
+            events: {{ trade_data | tojson }},  // Pass trade_data as a JSON object
+        themeSystem: '',
+        eventRender: function (event, element) {
+
+            // Add custom content to the event rendering
+            element.find('.fc-title').append('<br>$' + event.pnl_sum);
+        },
+        dayRender: function (date, cell) {
+            if (date.isSame(moment(), 'day')) {
+                cell.css('background-color', 'rgb(90,90,90,1)');
+            }
+        },
+        eventMouseover: function (calEvent, jsEvent) {
+            $(this).css('cursor', 'pointer'); // Apply the cursor: pointer style
+        },
+        eventMouseout: function (calEvent, jsEvent) {
+            $(this).css('cursor', ''); // Remove the cursor style
+        },
+        eventClick: function (calEvent, jsEvent, view) {
+            // Handle trade event click
+
+            // Retrieve the trade details for the clicked date
+            var tradeDetails = calEvent.trades;
+
+            // Display trade details in the modal
+            var modalTitle = $('#tradeDetailsModalLabel');
+            var modalBody = $('#tradeDetailsModal .modal-body');
+
+            // Set the trade details in the modal
+            modalTitle.text('Trade Details: ' + calEvent.title);
+            modalBody.empty();
+
+            // Create a table for the trade details
+            var table = $('<table>').addClass('table');
+            var tableBody = $('<tbody>');
+
+            // Add table headers
+            var headerRow = $('<tr>');
+            headerRow.append('<th>Date/Time</th>');
+            headerRow.append('<th>Symbol</th>');
+            headerRow.append('<th>Market</th>');
+            headerRow.append('<th>Status</th>');
+            headerRow.append('<th>Instrument</th>');
+            headerRow.append('<th>PNL</th>');
+            headerRow.append('<th>PNL %</th>');
+            // Add more headers for other trade details as needed
+            tableBody.append(headerRow);
+
+            // Add table rows for each trade
+            tradeDetails.forEach(function (trade) {
+                var row = $('<tr>').addClass('hand-cursor').css('cursor', 'pointer');
+                row.append('<td>' + trade.date_time + '</td>');
+                row.append('<td>' + trade.symbol + '</td>');
+                row.append('<td>' + trade.market + '</td>');
+                if (trade.status === 'WIN') {
+                    row.append('<td><span class="badge bg-success">' + trade.status + '</span></td>');
+                } else if (trade.status === 'LOSS') {
+                    row.append('<td><span class="badge bg-danger">' + trade.status + '</span></td>');
+                } else {
+                    row.append('<td><span class="badge bg-warning">' + trade.status + '</span></td>');
+                }
+                row.append('<td>' + trade.instrument + '</td>');
+                if (trade.pnl > 0) {
+                    row.append('<td class="text-success">$' + trade.pnl + '</td>');
+                } else if (trade.pnl < 0) {
+                    row.append('<td class="text-danger">$' + trade.pnl + '</td>');
+                } else {
+                    row.append('<td>$' + trade.pnl + '</td>');
+                }
+                if (trade.pnl_percent > 0) {
+                    row.append('<td class="text-success">' + trade.pnl_percent + '%</td>');
+                } else if (trade.pnl_percent < 0) {
+                    row.append('<td class="text-danger">' + trade.pnl_percent + '%</td>');
+                } else {
+                    row.append('<td>' + trade.pnl_percent + '%</td>');
+                }
+
+                // Add more cells for other trade details as needed
+                tableBody.append(row);
+                row.click(function () {
+                    window.location.href = "/trades/" + trade.id;
+                });
+
+            });
+
+            // Append table body to the table
+            table.append(tableBody);
+
+            // Append the table to the modal body
+            modalBody.append(table);
+
+            // Show the modal
+            $('#tradeDetailsModal').modal('show');
+        }
+        
+        
+        });
+    });
+</script>
+{% endblock %}
