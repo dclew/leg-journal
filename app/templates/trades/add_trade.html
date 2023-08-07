@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-center">
+    <div class="card w-50">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('trades_bp.new_trade') }}" onsubmit="return validateForm()">
+                {{ form.csrf_token }}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.portfolio.label }}
+                        {{ form.portfolio(class_='form-control') }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.market.label }}
+                        {{ form.market(class_="form-control") }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3 stock-fields crypto-fields">
+                        {{ form.symbol.label }}
+                        {{ form.symbol(class_="form-control", id="symbol-input") }}
+                        <div id="symbol-error" class="error-message text-danger"></div>
+                    </div>
+                    <div class="col-md-6 mb-3 stock-fields crypto-fields">
+                        {{ form.date_time.label }}
+                        {{ form.date_time(class_='form-control date-time-picker') }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                        {{ form.action.label }}
+                        {{ form.action(class_="form-control") }}
+                    </div>
+                    <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                        {{ form.quantity.label }}
+                        {{ form.quantity(class_="form-control", id="quantity-input") }}
+                        <div id="quantity-error" class="error-message text-danger"></div>
+                    </div>
+                    <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                        {{ form.price.label }}
+                        {{ form.price(class_="form-control", id="price-input") }}
+                        <div id="price-error" class="error-message text-danger"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3 option-fields">
+                        {{ form.expiration_date.label }}
+                        {{ form.expiration_date(class_="form-control") }}
+                    </div>
+                    <div class="col-md-4 mb-3 option-fields">
+                        {{ form.strike_price.label }}
+                        {{ form.strike_price(class_="form-control", id="strike-price-input") }}
+                        <div id="strike-price-error" class="error-message text-danger"></div>
+                    </div>
+                    <div class="col-md-4 mb-3 option-fields">
+                        {{ form.call_put.label }}
+                        {{ form.call_put(class_="form-control") }}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/new_trade_validation.js') }}"></script>
+<script>
+    $(document).ready(function () {
+        // Function to show/hide fields based on the selected market
+        function updateFields() {
+            var selectedMarket = $('#market').val();
+            $('.stock-fields, .crypto-fields').toggle(selectedMarket === 'Stock' || selectedMarket === 'Crypto');
+            $('.option-fields').toggle(selectedMarket === 'Options');
+
+            // Show all fields when "Options" is selected
+            if (selectedMarket === 'Options') {
+                $('.stock-fields, .crypto-fields, .option-fields').show();
+            }
+        }
+
+        // Call the updateFields function on page load to set the initial state
+        updateFields();
+
+        // Add an event listener to the market select element
+        $('#market').change(updateFields);
+    });
+</script>
+<script>
+    flatpickr('.date-time-picker', {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",  // Adjust the date and time format
+        time_24hr: true,
+        defaultDate: "today",
+        defaultHour: new Date().getHours(),
+        allowInput: true,
+    });
+</script>
+{% endblock %}

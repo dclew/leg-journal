@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+    <div class="col">
+        <h3>Open Trades <a
+                href="{{ url_for('trades_bp.get_current_price_open_trades_new', portfolio_id=selected_portfolio.id) }}">
+                <span><i class="oi oi-reload text-success"></i></span></a></h3>
+    </div>
+    <div class="col text-end">
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="portfolioDropdown"
+                data-bs-toggle="dropdown" aria-expanded="false" data-csrf="{{ csrf_token() }}">
+                {{ selected_portfolio.name }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="portfolioDropdown">
+                {% for portfolio in portfolios %}
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('trades_bp.open_trades', portfolio_id=portfolio.id) }}">
+                        {{ portfolio.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+<h5 class="{% if selected_portfolio.open_pnl >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+    ${{ "{:,.2f}".format(selected_portfolio.open_pnl) }} /
+    {{selected_portfolio.open_pnl_percent}}%
+</h5>
+{% if selected_portfolio.has_open_trades %}
+<hr>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th class="d-none d-md-table-cell">Open Date</th>
+                <th>Symbol</th>
+                <th class="d-none d-md-table-cell">Trade Type</th>
+                <th>Instrument</th>
+                <th class="d-none d-md-table-cell">Volume</th>
+                <th class="d-none d-md-table-cell">Avg Entry</th>
+                <th class="d-none d-md-table-cell">Current Price</th>
+                <th class="d-none d-md-table-cell">Cost/Proceed</th>
+                <th class="d-none d-md-table-cell">Mkt Value</th>
+                <th>Open PNL</th>
+                <th class="d-none d-md-table-cell"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trade in trades %}
+            {% if trade.status == "OPEN" %}
+            <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
+                <td class="d-none d-md-table-cell">{{ trade.only_date }}</td>
+                <td>{{ trade.symbol }}</td>
+                {% if trade.is_credit %}
+                <td class="d-none d-md-table-cell"><span class="badge bg-danger">SHORT</span></td>
+                {% elif trade.is_debit %}
+                <td class="d-none d-md-table-cell"><span class="badge bg-success">LONG</span></td>
+                {% endif %}
+                <td>{{ trade.instrument }}</td>
+                {% if trade.is_credit %}
+                {% if trade.volume > 1 %}
+                <td class="d-none d-md-table-cell">{{ trade.volume }} Sells</td>
+                {% else %}
+                <td class="d-none d-md-table-cell">{{ trade.volume }} Sell</td>
+                {% endif %}
+                {% elif trade.is_debit %}
+                {% if trade.volume > 1 %}
+                <td class="d-none d-md-table-cell">{{ trade.volume }} Buys</td>
+                {% else %}
+                <td class="d-none d-md-table-cell">{{ trade.volume }} Buy</td>
+                {% endif %}
+                {% endif %}
+                <td class="d-none d-md-table-cell">${{ "{:,.2f}".format(trade.avg_entry) }}</td>
+                {% if trade.current_price %}
+                <td class="d-none d-md-table-cell">${{ "{:,.2f}".format(trade.current_price) }}</td>
+                {% else %}
+                <td class="d-none d-md-table-cell">---</td>
+                {% endif %}
+                {% if trade.is_credit %}
+                <td class="d-none d-md-table-cell">${{ "{:,.2f}".format(trade.adjusted_proceeds) }}</td>
+                {% elif trade.is_debit %}
+                <td class="d-none d-md-table-cell">${{ "{:,.2f}".format(trade.adjusted_cost) }}</td>
+                {% endif %}
+                <td class="d-none d-md-table-cell">${{ "{:,.2f}".format(trade.mkt_value) }}</td>
+                {% if trade.current_price %}
+                <td>
+                    {% if trade.open_pnl >= 0 %}
+                    <span class="text-end text-success">${{"{:,.2f}".format(trade.open_pnl) }} / {{
+                        trade.open_pnl_percent
+                        }}%</span>
+                    {% else %}
+                    <span class="text-end text-danger">${{ "{:,.2f}".format(trade.open_pnl) }} / {{
+                        trade.open_pnl_percent
+                        }}%</span>
+                    {% endif %}
+                </td>
+                {% else %}
+                <td>---</td>
+                {% endif %}
+                <td class="d-none d-md-table-cell"><a
+                        href="{{ url_for('trades_bp.get_current_price_new', trade_id=trade.id) }}" class="no-redirect">
+                        <span><i class="oi oi-reload text-primary"></i></span>
+                    </a>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            <tr>
+                <td class="d-none d-md-table-cell"></td>
+                <td class="d-none d-md-table-cell"></td>
+                <td class="d-none d-md-table-cell"></td>
+                <td class="d-none d-md-table-cell"></td>
+                <td class="d-none d-md-table-cell"></td>
+                <td class="d-none d-md-table-cell"></td>
+                <td class="d-none d-md-table-cell"></td>
+                <td class="d-none d-md-table-cell">${{ "{:,.2f}".format(selected_portfolio.open_cost_proceed) }}
+                </td>
+                <td class="d-none d-md-table-cell">${{ "{:,.2f}".format(selected_portfolio.open_mkt_value) }}
+                </td>
+                <td
+                    class="d-none d-md-table-cell {% if selected_portfolio.open_pnl >= 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                    ${{ "{:,.2f}".format(selected_portfolio.open_pnl) }} /
+                    {{selected_portfolio.open_pnl_percent}}%
+                </td>
+                <td class="d-none d-md-table-cell"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% else %}
+No open trades
+{% endif %}
+<script>
+    $(document).ready(function () {
+        // Add hover effect to clickable rows
+        $("tr[data-href]").on("mouseenter", function () {
+            $(this).addClass("hover");
+        }).on("mouseleave", function () {
+            $(this).removeClass("hover");
+        });
+
+        // Redirect to trade details page when clicking on a row
+        $("tr[data-href]").on("click", function (e) {
+            if (!$(e.target).closest("a").hasClass("no-redirect")) {
+                e.preventDefault(); // Prevent the default link behavior
+                var url = $(this).data("href");
+                window.open(url, "_blank"); // Open the URL in a new tab
+            }
+        });
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        $('#open-trades-table').DataTable({
+            "order": [[0, "desc"]],
+            lengthMenu: [
+                [20, 50, -1],
+                [20, 50, 'All'],
+            ],
+        });
+    });
+</script>
+<style>
+    .table-row:hover {
+        background-color: #464646;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

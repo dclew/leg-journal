@@ -5,6 +5,8 @@
 app.db
 /migrations
 notes.txt
+/app/static/img/trade-img/
+!/app/static/img/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
