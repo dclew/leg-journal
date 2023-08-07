@@ -12,7 +12,7 @@ from .models import Portfolio
 from .forms import PortfolioForm
 from app import db
 from flask_login import current_user, login_user, login_required
-from app.models import User
+from app.models import *
 
 default_bp = Blueprint("default_bp", __name__, url_prefix="/")
 
@@ -22,7 +22,7 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for("default_bp.settings"))
     else:
-        flash("Please login to access settings")
+        flash("Please login to access settings", "warning")
         return redirect(url_for("auth_bp.login"))
 
 
@@ -58,6 +58,69 @@ def settings():
     return render_template("settings.html", form=form, portfolios=portfolios, user=user)
 
 
+@default_bp.route("/create_tag", methods=["POST"])
+def create_tag():
+    user = User.query.filter_by(email=current_user.email).first()
+    tag_type = request.form.get("tagType")
+    tag_name = request.form.get("tagName")
+
+    # Check if a Setup or Mistake with the same name already exists
+    existing_tag = None
+    if tag_type == "Setup":
+        existing_tag = Setup.query.filter_by(name=tag_name, user_id=user.id).first()
+    elif tag_type == "Mistake":
+        existing_tag = Mistake.query.filter_by(name=tag_name, user_id=user.id).first()
+
+    if existing_tag:
+        # Display an error message and redirect back to the settings page
+        flash("A tag with the same name already exists.", "danger")
+        return redirect(url_for("default_bp.settings"))
+
+    # Create a new Setup or Mistake instance based on the tag type
+    if tag_type == "Setup":
+        tag = Setup(name=tag_name, user_id=user.id)
+    elif tag_type == "Mistake":
+        tag = Mistake(name=tag_name, user_id=user.id)
+    else:
+        # Handle invalid tag type here (e.g., show an error message)
+        return redirect(url_for("default_bp.settings"))
+
+    # Save the new tag to the database
+    db.session.add(tag)
+    db.session.commit()
+
+    # Redirect back to the settings page
+    return redirect(url_for("default_bp.settings"))
+
+
+@default_bp.route("/delete_setup/<int:setup_id>", methods=["POST"])
+@login_required
+def delete_setup(setup_id):
+    setup = Setup.query.get(setup_id)
+    if setup:
+        db.session.delete(setup)
+        db.session.commit()
+        flash("Setup deleted successfully!")
+    else:
+        flash("Invalid form submission. Please try again.")
+
+    return redirect(url_for("default_bp.settings"))
+
+
+@default_bp.route("/delete_mistake/<int:mistake_id>", methods=["POST"])
+@login_required
+def delete_mistake(mistake_id):
+    mistake = Mistake.query.get(mistake_id)
+    if mistake:
+        db.session.delete(mistake)
+        db.session.commit()
+        flash("Mistake deleted successfully!")
+    else:
+        flash("Invalid form submission. Please try again.")
+
+    return redirect(url_for("default_bp.settings"))
+
+
 @default_bp.route("/edit_portfolio_name/<int:portfolio_id>", methods=["POST"])
 @login_required
 def edit_portfolio_name(portfolio_id):
@@ -68,6 +131,20 @@ def edit_portfolio_name(portfolio_id):
         portfolio.name = new_portfolio_name
         db.session.commit()
         flash("Portfolio updated successfully!")
+    else:
+        flash("Invalid form submission. Please try again.")
+
+    return redirect(url_for("default_bp.settings"))
+
+
+@default_bp.route("/delete_portfolio/<int:portfolio_id>", methods=["POST"])
+@login_required
+def delete_portfolio(portfolio_id):
+    portfolio = Portfolio.query.get(portfolio_id)
+    if portfolio:
+        db.session.delete(portfolio)
+        db.session.commit()
+        flash("Portfolio deleted successfully!")
     else:
         flash("Invalid form submission. Please try again.")
 

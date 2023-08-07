@@ -34,47 +34,48 @@
         </div>
     </div>
     <div class="card-body">
-
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>Open Time</th>
-                    <th>Status</th>
-                    <th>Ticker</th>
-                    <th>Market</th>
-                    <th>Instrument</th>
-                    <th>Net PNL</th>
-                    <th>NET ROI</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for trade in trade_info['trades'] %}
-                <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
-                    <td>{{ trade.date_time }}</td>
-                    <td>
-                        {% if trade.status == 'WIN' %}
-                        <span class="badge bg-success">{{ trade.status }}</span>
-                        {% elif trade.status == 'LOSS' %}
-                        <span class="badge bg-danger">{{ trade.status }}</span>
-                        {% else %}
-                        <span class="badge bg-warning">{{ trade.status }}</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ trade.symbol }}</td>
-                    <td>{{ trade.market }}</td>
-                    <td>{{ trade.instrument }}</td>
-                    <td class="{% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
-                        ${{
-                        trade.pnl
-                        }}
-                    </td>
-                    <td
-                        class="{% if trade.pnl_percent > 0 %}text-success{% elif trade.pnl_percent < 0 %}text-danger{% endif %}">
-                        {{ trade.pnl_percent }}%</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Open Time</th>
+                        <th>Status</th>
+                        <th>Ticker</th>
+                        <th>Market</th>
+                        <th>Instrument</th>
+                        <th>Net PNL</th>
+                        <th>NET ROI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trade in trade_info['trades'] %}
+                    <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
+                        <td>{{ trade.date_time }}</td>
+                        <td>
+                            {% if trade.status == 'WIN' %}
+                            <span class="badge bg-success">{{ trade.status }}</span>
+                            {% elif trade.status == 'LOSS' %}
+                            <span class="badge bg-danger">{{ trade.status }}</span>
+                            {% else %}
+                            <span class="badge bg-warning">{{ trade.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ trade.symbol }}</td>
+                        <td>{{ trade.market }}</td>
+                        <td>{{ trade.instrument }}</td>
+                        <td class="{% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
+                            ${{
+                            trade.pnl
+                            }}
+                        </td>
+                        <td
+                            class="{% if trade.pnl_percent > 0 %}text-success{% elif trade.pnl_percent < 0 %}text-danger{% endif %}">
+                            {{ trade.pnl_percent }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 

@@ -2,11 +2,41 @@
 
 {% block content %}
 <br>
-<h3>Settings</h3>
-<div class="card">
-    <div class="card-header">
-        <h5>Manage Portfolios</h5>
+<div class="row align-items-start mb-2">
+    <div class="col">
+        <h4>Portfolios</h4>
     </div>
+    <div class="col text-end">
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+            data-bs-target="#createPortfolioModal">
+            <span class="bi bi-plus"></span>
+        </button>
+    </div>
+</div>
+<!-- Modal for creating a new portfolio -->
+<div class="modal fade" id="createPortfolioModal" tabindex="-1" role="dialog"
+    aria-labelledby="createPortfolioModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPortfolioModalLabel">Create a new portfolio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tag creation form -->
+                <form method="POST" action="{{ url_for('default_bp.settings') }}">
+                    {{ form.csrf_token }}
+                    <div class="mb-3">
+                        {{ form.name.label }}
+                        {{ form.name(class_='form-control') }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
     <div class="card-body">
         <table class="table table-striped">
             <thead>
@@ -19,7 +49,7 @@
                     <th>Profit/Loss</th>
                     <th>Trade Expectancy</th>
                     <th>Profit Factor</th>
-                    <th>Edit</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -47,10 +77,14 @@
                     <td>${{ portfolio.trade_expectancy }}</td>
                     <td>{{ portfolio.profit_factor }}</td>
                     <td>
-                        <a href="#" class="edit-portfolio-btn" data-bs-toggle="modal"
-                            data-bs-target="#editPortfolioModal-{{ portfolio.id }}"
-                            data-portfolio-id="{{ portfolio.id }}" data-portfolio-name="{{ portfolio.name }}"><span
-                                class="oi oi-pencil"></span></a>
+                        <span class="icon-wrapper">
+                            <i class="oi oi-pencil text-primary edit-portfolio-btn" data-bs-toggle="modal"
+                                data-bs-target="#editPortfolioModal-{{ portfolio.id }}"
+                                data-portfolio-id="{{ portfolio.id }}" data-portfolio-name="{{ portfolio.name }}"></i>
+                            <i class="oi oi-trash text-danger delete-portfolio-btn" data-bs-toggle="modal"
+                                data-bs-target="#deletePortfolioModal-{{ portfolio.id }}"
+                                data-portfolio-id="{{ portfolio.id }}" data-portfolio-name="{{ portfolio.name }}"></i>
+                        </span>
                     </td>
                 </tr>
 
@@ -61,7 +95,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title" id="editPortfolioModalLabel-{{ portfolio.id }}">Edit Portfolio
-                                    {{ portfolio.id }} {{ portfolio.name }}</h5>
+                                    Name - {{ portfolio.name }}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                     aria-label="Close"></button>
                             </div>
@@ -83,21 +117,201 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Delete Portfolio Modal -->
+                <div class="modal fade" id="deletePortfolioModal-{{ portfolio.id }}" tabindex="-1"
+                    aria-labelledby="deletePortfolioModalLabel-{{ portfolio.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deletePortfolioModalLabel-{{ portfolio.id }}">Delete
+                                    Portfolio - {{ portfolio.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="deletePortfolioForm-{{ portfolio.id }}" method="POST"
+                                    action="{{ url_for('default_bp.delete_portfolio', portfolio_id=portfolio.id) }}">
+                                    {{ form.csrf_token }}
+                                    <div class="mb-3">
+                                        <h3>WARNING</h3>
+                                        <span>Are you sure you want to delete?</span>
+
+                                        <span>
+                                            This cannot be undone. All trades associated with this portfolio will be
+                                            deleted!
+                                        </span>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-<hr>
-<h5>Create New Portfolio</h5>
-<form method="POST" action="{{ url_for('default_bp.settings') }}">
-    {{ form.csrf_token }}
-    <div class="mb-3">
-        {{ form.name.label }}
-        {{ form.name(class_='form-control') }}
+<br>
+<div class="row align-items-start mb-2">
+    <div class="col">
+        <h4>Tag Management</h4>
     </div>
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+    <div class="col text-end">
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTagModal">
+            <span class="bi bi-plus"></span>
+        </button>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5>Setups</h5>
+                <table class="table table-striped table-hover dark-datatable">
+                    <tbody>
+                        {% for setup in user.setups %}
+                        <tr>
+                            <td class="d-flex justify-content-between">
+                                <span class="badge bg-primary">{{ setup.name }}</span>
+                                <i class="oi oi-trash text-danger delete-setup-icon" data-bs-toggle="modal"
+                                    data-bs-target="#deleteSetupModal-{{ setup.id }}" data-setup-id="{{ setup.id }}"
+                                    data-setup-name="{{ setup.name }}"></i>
+
+                            </td>
+                            <!-- Delete Setup Modal -->
+                            <div class="modal fade" id="deleteSetupModal-{{ setup.id }}" tabindex="-1"
+                                aria-labelledby="deleteSetupModalLabel-{{ setup.id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="deleteSetupModalLabel-{{ setup.id }}">
+                                                Delete
+                                                Setup -
+                                                {{ setup.name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form id="deleteSetupForm-{{ setup.id }}" method="POST"
+                                                action="{{ url_for('default_bp.delete_setup', setup_id=setup.id) }}">
+                                                {{ form.csrf_token }}
+                                                <div class="mb-3">
+                                                    <h3>WARNING</h3>
+                                                    <span>Are you sure you want to delete?</span>
+                                                    <span>
+                                                        This cannot be undone. Any association to trades will be removed
+                                                        from those trades.
+                                                    </span>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Cancel</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5>Mistakes</h5>
+                <table class="table table-striped table-hover dark-datatable">
+                    <tbody>
+                        {% for mistake in user.mistakes %}
+                        <tr>
+                            <td class="d-flex justify-content-between">
+                                <span class="badge bg-danger">{{ mistake.name }}</span>
+                                <i class="oi oi-trash text-danger delete-mistake-icon" data-bs-toggle="modal"
+                                    data-bs-target="#deleteMistakeModal-{{ mistake.id }}"
+                                    data-mistake-id="{{ mistake.id }}" data-mistake-name="{{ mistake.name }}"></i>
+                            </td>
+                            <!-- Delete Mistake Modal -->
+                            <div class="modal fade" id="deleteMistakeModal-{{ mistake.id }}" tabindex="-1"
+                                aria-labelledby="deleteMistakeModalLabel-{{ mistake.id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="deleteMistakeModalLabel-{{ mistake.id }}">
+                                                Delete Mistake - {{ mistake.name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form id="deleteMistakeForm-{{ mistake.id }}" method="POST"
+                                                action="{{ url_for('default_bp.delete_mistake', mistake_id=mistake.id) }}">
+                                                {{ form.csrf_token }}
+                                                <div class="mb-3">
+                                                    <h3>WARNING</h3>
+                                                    <span>Are you sure you want to delete?</span>
+                                                    <span>
+                                                        This cannot be undone. Any association to trades will be removed
+                                                        from those trades.
+                                                    </span>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Cancel</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for creating a new tag -->
+<div class="modal fade" id="createTagModal" tabindex="-1" role="dialog" aria-labelledby="createTagModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTagModalLabel">Create New Tag</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tag creation form -->
+                <form action="{{ url_for('default_bp.create_tag') }}" method="POST">
+                    {{ form.csrf_token }}
+                    <div class="form-group">
+                        <label for="tagType">Tag Type</label>
+                        <select class="form-control" id="tagType" name="tagType">
+                            <option value="Setup">Setup</option>
+                            <option value="Mistake">Mistake</option>
+                        </select>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="tagName">Tag Name</label>
+                        <input type="text" class="form-control" id="tagName" name="tagName">
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">Create Tag</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     $(document).ready(function () {
         // Add hover effect to clickable rows
@@ -112,10 +326,16 @@
             window.location.href = $(this).data("href");
         });
 
-        // Delete trade
+        // Edit Portfolio Name
         $(".edit-portfolio-btn").click(function (event) {
             event.stopPropagation(); // Prevent click event from propagating to the row
             $("#editPortfolioModal").modal("show");
+        });
+
+        // Delete Portfolio
+        $(".delete-portfolio-btn").click(function (event) {
+            event.stopPropagation(); // Prevent click event from propagating to the row
+            $("#deletePortfolioModal").modal("show");
         });
     });
 </script>

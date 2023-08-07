@@ -1,5 +1,6 @@
 from app import create_app
 from app.models import User, Trade, Order, Portfolio, Image
+from flask_login import current_user
 
 config_class = "config.DevelopmentConfig"
 app = create_app(config_class)
@@ -7,8 +8,7 @@ app = create_app(config_class)
 
 @app.context_processor
 def inject_variables():
-    nav_portfolios = Portfolio.query.all()
-    return dict(nav_portfolios=nav_portfolios)
+    return dict()
 
 
 if __name__ == "__main__":

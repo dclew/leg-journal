@@ -1,4 +1,9 @@
 import json
+import yfinance as yf
+import config
+import requests
+import robin_stocks.robinhood as r
+import time
 from flask import (
     Blueprint,
     render_template,
@@ -12,7 +17,7 @@ from flask import (
     abort,
 )
 from sqlalchemy import desc, func
-from app.models import Image, Trade, db, Order, Portfolio, User
+from app.models import *
 import csv, sys, io
 from .forms import OptionTradeForm, OrderForm, NewTradeForm
 from datetime import datetime, date
@@ -61,6 +66,21 @@ def return_open_trades(portfolio_id):
     return trades
 
 
+def convert_option_contract(ticker, option_contract):
+    parts = option_contract.split(" ")
+    expiration_date = datetime.strptime(parts[0], "%m-%d-%Y").strftime("%y%m%d")
+    strike_price = float(parts[1]) * 1000
+    strike_price = f"{strike_price:08.0f}"
+    option_type = parts[2].upper()
+    if option_type == "CALL":
+        option_type = "C"
+    elif option_type == "PUT":
+        option_type = "P"
+
+    contract = f"{ticker}{expiration_date}{option_type}{strike_price}"
+    return contract
+
+
 @trades_bp.route("/dashboard", methods=["GET", "POST"])
 @trades_bp.route("/dashboard/portfolio=<int:portfolio_id>", methods=["GET", "POST"])
 @login_required
@@ -70,11 +90,11 @@ def dashboard(portfolio_id=None):
     portfolios = user.portfolios
     if user.portfolios:
         selected_portfolio, trades = return_portfolio_trades(portfolio_id, user)
-        trades = trades = Trade.query.filter_by(portfolio_id=portfolio_id).order_by(
+        trades = Trade.query.filter_by(portfolio_id=portfolio_id).order_by(
             desc(Trade.date_time)
         )
     else:
-        flash("No portfolios exist, please create a portfolio")
+        flash("No portfolios exist, please create a portfolio", "warning")
         return redirect(url_for("default_bp.settings"))
 
     # Calculate trade count and P&L sum for each date
@@ -105,6 +125,8 @@ def dashboard(portfolio_id=None):
     pnl_data = {str(date): pnl for date, pnl in pnl_data.items()}
     daily_pnl = selected_portfolio.calculate_daily_pnl()
     daily_pnl = {str(date): pnl for date, pnl in daily_pnl.items()}
+    monthly_pnl = selected_portfolio.calculate_monthly_pnl()
+    monthly_pnl = {str(date): pnl for date, pnl in monthly_pnl.items()}
     return render_template(
         "trades/dashboard.html",
         user=user,
@@ -114,6 +136,7 @@ def dashboard(portfolio_id=None):
         trade_data=trade_data,
         pnl_data=pnl_data,
         daily_pnl=daily_pnl,
+        monthly_pnl=monthly_pnl,
     )
 
 
@@ -127,22 +150,23 @@ def daily_journal(portfolio_id=None):
     if user.portfolios:
         selected_portfolio, trades = return_portfolio_trades(portfolio_id, user)
     else:
-        flash("No portfolios exist, please create a portfolio")
+        flash("No portfolios exist, please create a portfolio", "warning")
         return redirect(url_for("default_bp.settings"))
 
     trade_journal = {}
     for trade in trades:
-        trade_date = trade.date_time.date()
+        if trade.status != "OPEN":
+            trade_date = trade.close_date.date()
 
-        # If the trade date is not already in the journal, create a new entry
-        if trade_date not in trade_journal:
-            trade_journal[trade_date] = {"trades": [], "pnl": 0}
+            # If the trade date is not already in the journal, create a new entry
+            if trade_date not in trade_journal:
+                trade_journal[trade_date] = {"trades": [], "pnl": 0}
 
-        # Add the trade to the corresponding date entry in the journal
-        trade_journal[trade_date]["trades"].append(trade)
+            # Add the trade to the corresponding date entry in the journal
+            trade_journal[trade_date]["trades"].append(trade)
 
-        # Calculate and update the pnl for the day
-        trade_journal[trade_date]["pnl"] += trade.pnl
+            # Calculate and update the pnl for the day
+            trade_journal[trade_date]["pnl"] += trade.pnl
 
     # Sort the trade journal by date
     sorted_journal = sorted(trade_journal.items(), key=lambda x: x[0], reverse=True)
@@ -164,7 +188,7 @@ def trade_log(portfolio_id=None):
     if user.portfolios:
         selected_portfolio, trades = return_portfolio_trades(portfolio_id, user)
     else:
-        flash("No portfolios exist, please create a portfolio")
+        flash("No portfolios exist, please create a portfolio", "warning")
         return redirect(url_for("default_bp.settings"))
 
     form = OptionTradeForm()
@@ -177,6 +201,58 @@ def trade_log(portfolio_id=None):
     )
 
 
+@trades_bp.route("/open_trades", methods=["GET", "POST"])
+@trades_bp.route("/open_trades/portfolio=<int:portfolio_id>", methods=["GET", "POST"])
+@login_required
+def open_trades(portfolio_id=None):
+    check_for_session_portfolio(portfolio_id)
+    user = User.query.filter_by(email=current_user.email).first()
+    portfolios = user.portfolios
+    if user.portfolios:
+        selected_portfolio, trades = return_portfolio_trades(portfolio_id, user)
+        trades = Trade.query.filter_by(portfolio_id=portfolio_id).order_by(
+            desc(Trade.date_time)
+        )
+    else:
+        flash("No portfolios exist, please create a portfolio", "warning")
+        return redirect(url_for("default_bp.settings"))
+
+    return render_template(
+        "trades/open_trades.html",
+        user=user,
+        selected_portfolio=selected_portfolio,
+        portfolios=portfolios,
+        trades=trades,
+    )
+
+
+@trades_bp.route("/open_trades_mobile", methods=["GET", "POST"])
+@trades_bp.route(
+    "/open_trades_mobile/portfolio=<int:portfolio_id>", methods=["GET", "POST"]
+)
+@login_required
+def open_trades_mobile(portfolio_id=None):
+    check_for_session_portfolio(portfolio_id)
+    user = User.query.filter_by(email=current_user.email).first()
+    portfolios = user.portfolios
+    if user.portfolios:
+        selected_portfolio, trades = return_portfolio_trades(portfolio_id, user)
+        trades = Trade.query.filter_by(portfolio_id=portfolio_id).order_by(
+            desc(Trade.date_time)
+        )
+    else:
+        flash("No portfolios exist, please create a portfolio", "warning")
+        return redirect(url_for("default_bp.settings"))
+
+    return render_template(
+        "trades/open_trades_mobile.html",
+        user=user,
+        selected_portfolio=selected_portfolio,
+        portfolios=portfolios,
+        trades=trades,
+    )
+
+
 @trades_bp.route("/trades", methods=["GET", "POST"])
 @trades_bp.route("/trades/portfolio=<int:portfolio_id>", methods=["GET", "POST"])
 @login_required
@@ -184,7 +260,7 @@ def list_trades(portfolio_id=None):
     portfolios = Portfolio.query.all()
 
     if not portfolios:
-        flash("No portfolio found, please create one")
+        flash("No portfolio found, please create one", "warning")
         return redirect(url_for("default_bp.settings"))
 
     if portfolio_id:
@@ -230,6 +306,234 @@ def list_trades(portfolio_id=None):
     )
 
 
+@trades_bp.route("/edit_trade/<int:trade_id>", methods=["POST"])
+@login_required
+def edit_trade(trade_id):
+    trade = Trade.query.get(trade_id)
+    if trade:
+        # Get the selected setup and mistake IDs from the form
+        selected_setups = request.form.getlist("setups")
+        selected_mistakes = request.form.getlist("mistakes")
+
+        # Clear existing setups and mistakes associated with the trade
+        trade.setups.clear()
+        trade.mistakes.clear()
+
+        # Add the selected setups and mistakes to the trade
+        for setup_id in selected_setups:
+            setup = Setup.query.get(setup_id)
+            if setup:
+                trade.setups.append(setup)
+
+        for mistake_id in selected_mistakes:
+            mistake = Mistake.query.get(mistake_id)
+            if mistake:
+                trade.mistakes.append(mistake)
+
+        # Commit the changes to the database
+        db.session.commit()
+        flash("Tags updated successfully!", "success")
+    else:
+        flash("Invalid trade ID. Please try again.", "danger")
+    return redirect(request.referrer)
+
+
+@trades_bp.route("/edit_current_price/<int:trade_id>", methods=["POST"])
+@login_required
+def edit_current_price(trade_id):
+    trade = Trade.query.get(trade_id)
+    if trade:
+        current_price = request.form.get("current_price")
+        trade.current_price = current_price
+        db.session.commit()
+        flash("Current price set", "success")
+    else:
+        flash("Invalid trade ID. Please try again.", "danger")
+    return redirect(request.referrer)
+
+
+@trades_bp.route("/get_current_price/<int:trade_id>")
+@login_required
+def get_current_price(trade_id):
+    trade = Trade.query.get(trade_id)
+    if trade:
+        if trade.market == "Options":
+            parts = trade.instrument.split(" ")
+            option_type = parts[2].lower()
+            date_str = trade.instrument.split()[0]
+            date_obj = datetime.strptime(date_str, "%m-%d-%Y").date()
+            converted_date_str = date_obj.strftime("%Y-%m-%d")
+
+            # contract = convert_option_contract(trade.symbol, trade.instrument)
+
+            r.login()
+            option = r.options.get_option_market_data(
+                inputSymbols=trade.symbol,
+                expirationDate=converted_date_str,
+                strikePrice=parts[1],
+                optionType=option_type,
+            )
+            if option:
+                last_price = round(float(option[0][0]["adjusted_mark_price"]), 2)
+            else:
+                last_price = 0
+            r.logout()
+
+            # yfsymbol = yf.Ticker(trade.symbol)
+            # opt = yfsymbol.option_chain(date=converted_date_str)
+
+            # if option_type == "CALL":
+            #     last_price = opt.calls.loc[
+            #         opt.calls.contractSymbol == contract, "lastPrice"
+            #     ].values[-1]
+            # elif option_type == "PUT":
+            #     last_price = opt.puts.loc[
+            #         opt.puts.contractSymbol == contract, "lastPrice"
+            #     ].values[-1]
+
+            trade.current_price = last_price
+            db.session.commit()
+            flash("Current price set", "success")
+        if trade.market == "Stock":
+            r.login()
+            stock = r.stocks.get_latest_price(trade.symbol)
+            if stock:
+                last_price = stock[0]
+            else:
+                last_price = 0
+            r.logout()
+            trade.current_price = last_price
+            db.session.commit()
+            flash("Current price set", "success")
+    return redirect(request.referrer)
+
+
+@trades_bp.route("/get_current_price_new/<int:trade_id>")
+@login_required
+def get_current_price_new(trade_id):
+    trade = Trade.query.get(trade_id)
+    if trade:
+        url = f"{config.API_BASE_URL}markets/quotes"
+        headers = {
+            "Authorization": f"Bearer {config.API_ACCESS_TOKEN}",
+            "Accept": "application/json",
+        }
+        if trade.market == "Options":
+            parts = trade.instrument.split(" ")
+            option_type = parts[2].lower()
+            date_str = trade.instrument.split()[0]
+            date_obj = datetime.strptime(date_str, "%m-%d-%Y").date()
+            converted_date_str = date_obj.strftime("%Y-%m-%d")
+
+            contract = convert_option_contract(trade.symbol, trade.instrument)
+
+            response = requests.get(url, params={"symbols": contract}, headers=headers)
+            json_response = response.json()
+            bid = json_response["quotes"]["quote"]["bid"]
+            ask = json_response["quotes"]["quote"]["ask"]
+            spread = ask - bid
+            mid_price = round(ask - (spread / 2), 2)
+
+            trade.current_price = mid_price
+            db.session.commit()
+            flash("Current price set", "success")
+        if trade.market == "Stock":
+            response = requests.get(
+                url, params={"symbols": trade.symbol}, headers=headers
+            )
+
+            json_response = response.json()
+            bid = json_response["quotes"]["quote"]["bid"]
+            ask = json_response["quotes"]["quote"]["ask"]
+            spread = ask - bid
+            mid_price = round(ask - (spread / 2), 2)
+
+            trade.current_price = mid_price
+            db.session.commit()
+            flash("Current price set", "success")
+    return redirect(request.referrer)
+
+
+@trades_bp.route("/get_current_price_open_trades/portfolio=<int:portfolio_id>")
+@login_required
+def get_current_price_open_trades(portfolio_id):
+    check_for_session_portfolio(portfolio_id)
+    user = User.query.filter_by(email=current_user.email).first()
+    trades = Trade.query.filter_by(portfolio_id=portfolio_id).order_by(
+        desc(Trade.date_time)
+    )
+    trades = [trade for trade in trades if trade.status == "OPEN"]
+    r.login()
+    for trade in trades:
+        if trade.market == "Options":
+            parts = trade.instrument.split(" ")
+            option_type = parts[2].lower()
+            date_str = trade.instrument.split()[0]
+            date_obj = datetime.strptime(date_str, "%m-%d-%Y").date()
+            converted_date_str = date_obj.strftime("%Y-%m-%d")
+
+            option = r.options.get_option_market_data(
+                inputSymbols=trade.symbol,
+                expirationDate=converted_date_str,
+                strikePrice=parts[1],
+                optionType=option_type,
+            )
+            last_price = round(float(option[0][0]["adjusted_mark_price"]), 2)
+            trade.current_price = last_price
+            db.session.commit()
+            time.sleep(0.25)
+    flash("Current price set", "success")
+    r.logout()
+    return redirect(request.referrer)
+
+
+@trades_bp.route("/get_current_price_open_trades_new/portfolio=<int:portfolio_id>")
+@login_required
+def get_current_price_open_trades_new(portfolio_id):
+    check_for_session_portfolio(portfolio_id)
+    user = User.query.filter_by(email=current_user.email).first()
+    trades = Trade.query.filter_by(portfolio_id=portfolio_id).order_by(
+        desc(Trade.date_time)
+    )
+    trades = [trade for trade in trades if trade.status == "OPEN"]
+
+    symbols = []
+    for trade in trades:
+        if trade.market == "Options":
+            contract = convert_option_contract(trade.symbol, trade.instrument)
+            symbols.append(contract)
+        elif trade.market == "Stock":
+            symbols.append(trade.symbol)
+
+    symbols_str = ",".join(symbols)
+    print(symbols_str)
+    url = f"{config.API_BASE_URL}markets/quotes"
+    headers = {
+        "Authorization": f"Bearer {config.API_ACCESS_TOKEN}",
+        "Accept": "application/json",
+    }
+
+    response = requests.get(url, params={"symbols": symbols_str}, headers=headers)
+    json_response = response.json()
+    quotes = json_response.get("quotes", {}).get("quote", [])
+    print(quotes)
+    for trade in trades:
+        for quote in quotes:
+            if trade.api_symbol == quote["symbol"]:
+                bid = quote["bid"]
+                ask = quote["ask"]
+                spread = ask - bid
+                mid_price = round(ask - (spread / 2), 2)
+                print(trade.symbol, mid_price)
+
+                trade.current_price = mid_price
+                db.session.commit()
+                break
+
+    flash("Current price set", "success")
+    return redirect(request.referrer)
+
+
 @trades_bp.route("/delete_trade/<int:trade_id>", methods=["POST"])
 @login_required
 def delete_trade(trade_id):
@@ -248,7 +552,9 @@ def trade_details(trade_id):
     if trade.portfolio.user != user:
         abort(403)
     form = OrderForm()
-    return render_template("trades/trade_details.html", trade=trade, form=form)
+    return render_template(
+        "trades/trade_details.html", trade=trade, form=form, user=user
+    )
 
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
@@ -282,11 +588,10 @@ def get_image_file_path(portfolio_id, trade_id, filename):
 @login_required
 def upload_image(trade_id):
     trade = Trade.query.filter_by(id=trade_id).first_or_404()
-
     if request.method == "POST":
         # Check if the request contains a file
         if "image" not in request.files:
-            flash("No file part", "error")
+            flash("No file part", "danger")
             return redirect(url_for("trades_bp.trade_details", trade_id=trade_id))
 
         image_file = request.files["image"]
@@ -310,30 +615,20 @@ def upload_image(trade_id):
             flash("Image uploaded successfully", "success")
             return redirect(url_for("trades_bp.trade_details", trade_id=trade_id))
 
-        flash("Invalid file type", "error")
+        flash("Invalid file type or missing image", "danger")
+        return redirect(url_for("trades_bp.trade_details", trade_id=trade_id))
 
-    return render_template("trades/upload_image.html", trade=trade)
 
-
-@trades_bp.route("/trades/<int:trade_id>/delete_image", methods=["POST"])
+@trades_bp.route("/trades/delete_image/<int:image_id>", methods=["POST"])
 @login_required
-def delete_image(trade_id):
-    trade = Trade.query.get_or_404(trade_id)
-    image_path = request.form.get("image_path")
-    print(image_path)
-    print(trade)
-    if image_path:
-        # Delete the image from the disk
-        os.remove(image_path)
-
-        # Remove the image from the trade's images list
-        image = Image.query.filter_by(filename=image_path).first()
-        if image:
-            db.session.delete(image)
-            db.session.commit()
+def delete_image(image_id):
+    image = Image.query.get_or_404(image_id)
+    if image:
+        db.session.delete(image)
+        db.session.commit()
 
     # Redirect to the trade details page
-    return redirect(url_for("trades_bp.trade_details", trade_id=trade_id))
+    return redirect(request.referrer)
 
 
 @trades_bp.route("/new_trade", methods=["GET", "POST"])

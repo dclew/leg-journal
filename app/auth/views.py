@@ -16,7 +16,7 @@ from app.auth.forms import (
     ResetPasswordRequestForm,
     ResetPasswordForm,
 )
-from app.models import User
+from app.models import *
 from app import db
 
 auth_bp = Blueprint("auth_bp", __name__)
@@ -30,10 +30,10 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if user is None or not user.check_password(form.password.data):
-            flash("Invalid username or password")
+            flash("Invalid username or password", "danger")
             return redirect(url_for("auth_bp.login"))
         login_user(user, remember=form.remember_me.data)
-        flash("Welcome {}".format(user.email))
+        flash("Welcome {}".format(user.email), "success")
         return redirect(url_for("default_bp.index"))
     return render_template("auth/login.html", title="Sign In", form=form)
 
@@ -53,9 +53,43 @@ def register():
     if form.validate_on_submit():
         user = User(email=form.email.data.lower())
         user.set_password(form.password.data)
+
         db.session.add(user)
         db.session.commit()
-        flash("Congratulations, you are now a registered user!")
+
+        portfolio = Portfolio(name="Default-Portfolio", user_id=user.id)
+        db.session.add(portfolio)
+        db.session.commit()
+
+        # Create and associate the predefined setups with the user
+        setups = [
+            "earnings",
+            "gap up",
+            "gap down",
+            "news hype",
+            "range breakout",
+            "bull flag",
+            "bear flag",
+        ]
+        for setup_name in setups:
+            setup = Setup(name=setup_name, user_id=user.id)
+            db.session.add(setup)
+
+        # Create and associate the predefined mistakes with the user
+        mistakes = [
+            "bored",
+            "chased",
+            "fomo",
+            "overtrade",
+            "no plan",
+            "did not cut loser quickly",
+        ]
+        for mistake_name in mistakes:
+            mistake = Mistake(name=mistake_name, user_id=user.id)
+            db.session.add(mistake)
+
+        db.session.commit()
+        flash("Congratulations, you are now a registered user!", "success")
         return redirect(url_for("auth_bp.login"))
     return render_template("auth/register.html", title="Register", form=form)
 

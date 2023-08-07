@@ -24,239 +24,165 @@
         </div>
     </div>
 </div>
-<br>
-<!-- Stat cards for portfolio -->
-<div class="row align-items-stretch">
-    <div class="col-auto">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column justify-content-center">
-                <div>
-                    <h6>Net PNL</h6>
-                </div>
-                <div>
-                    <h4
-                        class="{% if selected_portfolio.pnl > 0 %}text-success{% elif selected_portfolio.pnl < 0 %}text-danger{% endif %}">
-                        ${{ selected_portfolio.pnl }}
-                    </h4>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-auto">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column justify-content-center">
-                <div>
-                    <h6>Trade Expectancy</h6>
-                </div>
-                <div>
-                    <h4
-                        class="{% if selected_portfolio.pnl > 0 %}text-success{% elif selected_portfolio.pnl < 0 %}text-danger{% endif %}">
-                        ${{ selected_portfolio.trade_expectancy }}
-                    </h4>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column justify-content-center">
-                <div class="row">
-                    <div class="col">
-                        <div>
-                            <h6>Profit Factor</h6>
-                        </div>
-                        <div>
-                            <h4>{{ selected_portfolio.profit_factor }}</h4>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <h6 class="text-success">${{ selected_portfolio.total_profit }} Profit</h6>
-                        <h6 class="text-danger">${{ selected_portfolio.total_losses }} Losses</h6>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column justify-content-center">
-                <div class="row">
-                    <div class="col d-flex flex-column justify-content-center">
-                        <div>
-                            <h6>Trade Win %</h6>
-                        </div>
-                        <div>
-                            <h4>{{ selected_portfolio.win_percentage }}%</h4>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <h6>{{ selected_portfolio.num_closed_trades }} Total trades</h6>
-                        <h6 class="text-success">{{ selected_portfolio.num_winning_trades }} Winning Trades</h6>
-                        <h6 class="text-danger">{{ selected_portfolio.num_losing_trades }} Losing Trades</h6>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column justify-content-center">
-                <div class="row">
-                    <div class="col d-flex flex-column justify-content-center">
-                        <div>
-                            <h6>Avg win/loss trade</h6>
-                        </div>
-                        <div>
-                            <h4>{{ selected_portfolio.average_win_loss_trade }}</h4>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div>
-                            <h6 class="text-success">Avg winning amount: ${{ selected_portfolio.average_winning_profit
-                                }}
-                            </h6>
-                        </div>
-                        <div>
-                            <h6 class="text-danger">Avg losing amount: ${{ selected_portfolio.average_losing_profit }}
-                            </h6>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        {% if selected_portfolio.avg_time_in_trade %}
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column justify-content-center">
-                <div class="row">
-                    <div class="col d-flex flex-column justify-content-center">
-                        <div>
-                            <h6>Avg time in all trades</h6>
-                        </div>
-                        <div>
-                            <h4>
-                                {{ selected_portfolio.avg_time_in_trade }} mins
-                            </h4>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div>
-                            <h6 class="text-success">Avg time winning trade: {{
-                                selected_portfolio.avg_time_in_trade_winning_trades }} mins</h6>
-                        </div>
-                        <div>
-                            <h6 class="text-danger">Avg time losing trade: {{
-                                selected_portfolio.avg_time_in_trade_losing_trades
-                                }} mins</h6>
-                        </div>
-                    </div>
-                </div>
-
-                {% if selected_portfolio.avg_time_in_trade_winning_trades %}
-
-                <!-- <div>
-                    <h4 class="text-success">
-                        {{ selected_portfolio.avg_time_in_trade_winning_trades }} minutes
-                    </h4>
-                </div>
-                {% endif %}
-                {% if selected_portfolio.avg_time_in_trade_losing_trades %}
-                <div>
-                    <h6>Avg time in losing trade</h6>
-                </div>
-                <div>
-                    <h4 class="text-danger">
-                        {{ selected_portfolio.avg_time_in_trade_losing_trades }} minutes
-                    </h4>
-                </div> -->
-                <!-- {% endif %} -->
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</div>
-<br>
 <!-- Trade table -->
 <div class="card">
     <div class="card-body">
-        <table class="table table-striped table-hover dark-datatable" id="trade-table">
-            <thead>
-                <tr>
-                    <th>Date/Time</th>
-                    <th>Symbol</th>
-                    <th>Status</th>
-                    <th>Instrument</th>
-                    <th>Adjusted Cost</th>
-                    <th>Adjusted Proceeds</th>
-                    <th>PNL</th>
-                    <th>PNL %</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for trade in trades %}
-                <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
-                    <td>{{ trade.date_time }}</td>
-                    <td><b>{{ trade.symbol }}</b></td>
-                    <td>
-                        {% if trade.status == 'WIN' %}
-                        <span class="badge bg-success">{{ trade.status }}</span>
-                        {% elif trade.status == 'LOSS' %}
-                        <span class="badge bg-danger">{{ trade.status }}</span>
-                        {% else %}
-                        <span class="badge bg-warning">{{ trade.status }}</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ trade.instrument }}</td>
-                    <td>${{ trade.adjusted_cost }}</td>
-                    <td>${{ trade.adjusted_proceeds }}</td>
-                    <td class="{% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
-                        ${{
-                        trade.pnl
-                        }}
-                    </td>
-                    <td
-                        class="{% if trade.pnl_percent > 0 %}text-success{% elif trade.pnl_percent < 0 %}text-danger{% endif %}">
-                        {{ trade.pnl_percent }}%</td>
-                    <td><a href="#" class="btn btn-danger btn-sm delete-trade-btn" data-trade-id="{{ trade.id }}"
-                            data-bs-toggle="modal" data-bs-target="#deleteTradeModal{{ trade.id }}"><span
-                                class="oi oi-trash"></span></a></td>
-                </tr>
-                <div class="modal fade" id="deleteTradeModal{{ trade.id }}" tabindex="-1"
-                    aria-labelledby="deleteTradeModalLabel{{ trade.id }}" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="deleteTradeModalLabel{{ trade.id }}">Delete Trade
-                                </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                Are you sure you want to delete this trade?
-                            </div>
-                            <div class="modal-footer">
-                                <form action="{{ url_for('trades_bp.delete_trade', trade_id=trade.id) }}" method="POST">
-                                    {{ form.csrf_token }}
-                                    <button type="submit" class="btn btn-danger"><span
-                                            class="oi oi-trash"></span></button>
-                                </form>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover dark-datatable" id="trade-table">
+                <thead>
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Symbol</th>
+                        <th>Status</th>
+                        <th>Instrument</th>
+                        <th>Adjusted Cost</th>
+                        <th>Adjusted Proceeds</th>
+                        <th>Setups</th>
+                        <th>Mistakes</th>
+                        <th>PNL</th>
+                        <th>PNL %</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trade in trades %}
+                    <tr data-href="{{ url_for('trades_bp.trade_details', trade_id=trade.id) }}" class="table-row">
+                        <td>{{ trade.date_time }}</td>
+                        <td><b>{{ trade.symbol }}</b></td>
+                        <td>
+                            {% if trade.status == 'WIN' %}
+                            <span class="badge bg-success">{{ trade.status }}</span>
+                            {% elif trade.status == 'LOSS' %}
+                            <span class="badge bg-danger">{{ trade.status }}</span>
+                            {% else %}
+                            <span class="badge bg-warning">{{ trade.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ trade.instrument }}</td>
+                        <td>${{ trade.adjusted_cost }}</td>
+                        <td>${{ trade.adjusted_proceeds }}</td>
+                        <td>
+                            {% for setup in trade.setups %}
+                            <span class="badge bg-primary">{{ setup.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for mistake in trade.mistakes %}
+                            <span class="badge bg-danger">{{ mistake.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="{% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
+                            ${{
+                            trade.pnl
+                            }}
+                        </td>
+                        <td
+                            class="{% if trade.pnl_percent > 0 %}text-success{% elif trade.pnl_percent < 0 %}text-danger{% endif %}">
+                            {{ trade.pnl_percent }}%</td>
+                        <td>
+                            <i class="oi oi-trash text-danger delete-trade-btn" data-trade-id="{{ trade.id }}"
+                                data-bs-toggle="modal" data-bs-target="#deleteTradeModal{{ trade.id }}"></i>
+                        </td>
+                    </tr>
+                    <div class="modal fade" id="deleteTradeModal{{ trade.id }}" tabindex="-1"
+                        aria-labelledby="deleteTradeModalLabel{{ trade.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteTradeModalLabel{{ trade.id }}">Delete Trade
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Are you sure you want to delete this trade?
+                                </div>
+                                <div class="modal-footer">
+                                    <form action="{{ url_for('trades_bp.delete_trade', trade_id=trade.id) }}"
+                                        method="POST">
+                                        {{ form.csrf_token }}
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Close</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <hr>
+        <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#addOrderForm"
+            aria-expanded="false" aria-controls="addOrderForm">
+            Add Trade
+        </button>
+        <div class="collapse" id="addOrderForm">
+            <br>
+            <div class="card card-body col-6">
+                <form method="POST" action="{{ url_for('trades_bp.add_trade') }}" onsubmit="return validateForm()">
+                    {{ form.csrf_token }}
+                    {{ form.portfolio(class_="form-control d-none", readonly=True,
+                    value=selected_portfolio.id)
+                    }}
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.market.label }}
+                            {{ form.market(class_="form-control") }}
+                        </div>
+                        <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                            {{ form.symbol.label }}
+                            {{ form.symbol(class_="form-control", id="symbol-input") }}
+                            <div id="symbol-error" class="error-message text-danger"></div>
+                        </div>
+                        <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                            {{ form.date_time.label }}
+                            {{ form.date_time(class_='form-control date-time-picker') }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                            {{ form.action.label }}
+                            {{ form.action(class_="form-control") }}
+                        </div>
+                        <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                            {{ form.quantity.label }}
+                            {{ form.quantity(class_="form-control", id="quantity-input") }}
+                            <div id="quantity-error" class="error-message text-danger"></div>
+                        </div>
+                        <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                            {{ form.price.label }}
+                            {{ form.price(class_="form-control", id="price-input") }}
+                            <div id="price-error" class="error-message text-danger"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3 option-fields">
+                            {{ form.expiration_date.label }}
+                            {{ form.expiration_date(class_="form-control") }}
+                        </div>
+                        <div class="col-md-4 mb-3 option-fields">
+                            {{ form.strike_price.label }}
+                            {{ form.strike_price(class_="form-control", id="strike-price-input") }}
+                            <div id="strike-price-error" class="error-message text-danger"></div>
+                        </div>
+                        <div class="col-md-4 mb-3 option-fields">
+                            {{ form.call_put.label }}
+                            {{ form.call_put(class_="form-control") }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
         <hr>
         <div class="row">
-            <div class="col"> <!-- Button to trigger the modal -->
+            <!-- <div class="col">
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTradeModal">
                     Add Trade
                 </button>
-            </div>
+            </div> -->
             <div class="col text-end">
                 <form action="{{ url_for('trades_bp.export_trades_csv', portfolio_id=selected_portfolio.id) }}"
                     method="GET">
@@ -280,7 +206,6 @@
                             {{ form.portfolio(class_="form-control d-none", readonly=True,
                             value=selected_portfolio.id)
                             }}
-
                             <div class="mb-3">
                                 {{ form.market.label }}
                                 {{ form.market(class_="form-control") }}
@@ -294,32 +219,36 @@
                                 {{ form.date_time.label }}
                                 {{ form.date_time(class_='form-control date-time-picker') }}
                             </div>
-                            <div class="mb-3 stock-fields crypto-fields">
-                                {{ form.action.label }}
-                                {{ form.action(class_="form-control") }}
+                            <div class="row">
+                                <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                                    {{ form.action.label }}
+                                    {{ form.action(class_="form-control") }}
+                                </div>
+                                <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                                    {{ form.quantity.label }}
+                                    {{ form.quantity(class_="form-control", id="quantity-input") }}
+                                    <div id="quantity-error" class="error-message text-danger"></div>
+                                </div>
+                                <div class="col-md-4 mb-3 stock-fields crypto-fields">
+                                    {{ form.price.label }}
+                                    {{ form.price(class_="form-control", id="price-input") }}
+                                    <div id="price-error" class="error-message text-danger"></div>
+                                </div>
                             </div>
-                            <div class="mb-3 stock-fields crypto-fields">
-                                {{ form.quantity.label }}
-                                {{ form.quantity(class_="form-control", id="quantity-input") }}
-                                <div id="quantity-error" class="error-message text-danger"></div>
-                            </div>
-                            <div class="mb-3 stock-fields crypto-fields">
-                                {{ form.price.label }}
-                                {{ form.price(class_="form-control", id="price-input") }}
-                                <div id="price-error" class="error-message text-danger"></div>
-                            </div>
-                            <div class="mb-3 option-fields">
-                                {{ form.call_put.label }}
-                                {{ form.call_put(class_="form-control") }}
-                            </div>
-                            <div class="mb-3 option-fields">
-                                {{ form.expiration_date.label }}
-                                {{ form.expiration_date(class_="form-control") }}
-                            </div>
-                            <div class="mb-3 option-fields">
-                                {{ form.strike_price.label }}
-                                {{ form.strike_price(class_="form-control", id="strike-price-input") }}
-                                <div id="strike-price-error" class="error-message text-danger"></div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3 option-fields">
+                                    {{ form.expiration_date.label }}
+                                    {{ form.expiration_date(class_="form-control") }}
+                                </div>
+                                <div class="col-md-4 mb-3 option-fields">
+                                    {{ form.strike_price.label }}
+                                    {{ form.strike_price(class_="form-control", id="strike-price-input") }}
+                                    <div id="strike-price-error" class="error-message text-danger"></div>
+                                </div>
+                                <div class="col-md-4 mb-3 option-fields">
+                                    {{ form.call_put.label }}
+                                    {{ form.call_put(class_="form-control") }}
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-primary">Submit</button>
                         </form>
@@ -372,8 +301,10 @@
         });
 
         // Redirect to trade details page when clicking on a row
-        $("tr[data-href]").on("click", function () {
-            window.location.href = $(this).data("href");
+        $("tr[data-href]").on("click", function (e) {
+            e.preventDefault(); // Prevent the default link behavior
+            var url = $(this).data("href");
+            window.open(url, "_blank"); // Open the URL in a new tab
         });
 
         // Delete trade

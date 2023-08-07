@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import Trade, Order, Portfolio, Image, User
+from app.models import *
 from datetime import datetime, date
 
 app = create_app()
@@ -14,6 +14,8 @@ def make_shell_context():
         "Trade": Trade,
         "Order": Order,
         "Image": Image,
+        "Setup": Setup,
+        "Mistake": Mistake,
         "datetime": datetime,
         "date": date,
     }

@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 basedir = os.getcwd()
 load_dotenv(os.path.join(basedir, ".env"))
 
+API_ACCESS_TOKEN = os.environ.get("API_ACCESS_TOKEN")
+API_BASE_URL = "https://api.tradier.com/v1/"
+
 
 class Config(object):
     DEBUG = False

@@ -1,3 +1,33 @@
+/* Media query to apply styles only on mobile devices */
+@media (max-width: 767px) {
+  .mobile-padding {
+      padding-top: 75px; /* 56px is the height of the fixed navbar, adjust as needed */
+  }
+  .content {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    padding: 2px;
+  }
+}
+
+/* Hide the mobile-navbar on screens larger than 767px */
+@media (min-width: 768px) {
+  .d-md-none {
+      display: none !important;
+  }
+  .content {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    padding: 15px;
+  }
+}
+
+.navbar-text {
+  color: white; /* Set the text color to white */
+}
+
 .darkly-textarea {
   background-color: #343a40;
   color: #fff;
@@ -24,13 +54,6 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-}
-
-.content {
-  height: 100%;
-  width: 100%;
-  overflow: auto;
-  padding: 30px;
 }
 
 .sidebar {
@@ -60,7 +83,6 @@ main {
 
 .b-example-divider {
   flex-shrink: 0;
-  width: 1.5rem;
   height: 100vh;
   background-color: rgba(0, 0, 0, .1);
   border: solid rgba(0, 0, 0, .15);
@@ -136,4 +158,8 @@ main {
 
 #calendar .fc-toolbar h2 {
   font-size: 1.5rem;
+}
+
+.icon-wrapper i {
+  margin-right: 3px;
 }
